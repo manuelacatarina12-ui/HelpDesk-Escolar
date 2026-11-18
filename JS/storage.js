@@ -1,135 +1,126 @@
-/*
-storage.js
-Camada De Persistencia Local - Help Desk
-Escolar
+const CHAVE_STORAGE = "chamados";
 
-Responsável por salvar, listar, atualizar e filtrar chamadas usando o LocalStorage do navegador
+const STATUS_DISPONIVEIS = [
+    "Aberto",
+    "Em andamento",
+    "Resolvido"
+];
 
-nucleo de dados (camadas){
-id: number,
-nome: string,
-setor: string,      ''
-
-categoria: string,
-descricao: string,
-propriedade: string,
-status: string, //"Aberto" | "Em andamento" | "Resolvido"
-dataCriacao: string
-
-*/
-
-    const CHAVE_STORAGE = "chamados";
-/*
-    Busca todos os chamados salvos no LocalStorage.
-    @return {Array} Lista de chamados (varia se nao houver nada salvo)
-
-*/
-function ListarChamados(){
+// Busca todos os chamados salvos.
+function listarChamados() {
     const dados = localStorage.getItem(CHAVE_STORAGE);
-    return dados ? JSON.parse(dados):[];
+
+    if (!dados) {
+        return [];
+    }
+
+    try {
+        const chamados = JSON.parse(dados);
+        return Array.isArray(chamados) ? chamados : [];
+    } catch (erro) {
+        console.error("Erro ao ler chamados:", erro);
+        return [];
+    }
 }
 
-/*
-Salvar a lista completa de chamados LocalStorage.
-Função interna, usados pelas demais funções.
-@param {Array} chamados */
-
-function salvarListaCompleta(chamados){
-    localStorage.setItem(CHAVE_STORAGE, JSON.stringify(chamados));
+// Salva a lista completa no LocalStorage.
+function salvarListaCompleta(chamados) {
+    localStorage.setItem(
+        CHAVE_STORAGE,
+        JSON.stringify(chamados)
+    );
 }
 
-/*
-Gera um novo ID incrmental para o chamado.
-@return {number} */
+// Gera um novo ID.
+function gerarNovoID() {
+    const chamados = listarChamados();
 
-function gerarNovoID(){
-    const chamados = ListarChamados();
-    if(chamados.leght === 0) return 1;
-    const maiorId = Math.max (...chamados.map ((c)=> c.id));
+    if (chamados.length === 0) {
+        return 1;
+    }
+
+    const maiorId = Math.max(
+        ...chamados.map(chamado => chamado.id)
+    );
+
     return maiorId + 1;
 }
 
-function salvarChamado(dadosChamado){
-    const chamados= ListarChamados();
+// Registra um novo chamado.
+function salvarChamado(dadosChamado) {
+    const chamados = listarChamados();
 
     const novoChamado = {
-        id:gerarNovoID(),
-        nome:dadosChamado.nome,
-        setor:dadosChamado.setor,
-        categoria:dadosChamado.categoria,
-        descricao:dadosChamado.descricao,
-        prioridade:dadosChamado.prioridade,
-        status:"Aberto",
-        dataCriacao:new Date ().toISOString(),
-
+        id: gerarNovoID(),
+        setor: dadosChamado.setor,
+        descricao: dadosChamado.descricao,
+        prioridade: dadosChamado.prioridade,
+        status: "Aberto",
+        dataCriacao: new Date().toISOString()
     };
 
     chamados.push(novoChamado);
+
     salvarListaCompleta(chamados);
 
     return novoChamado;
 }
 
-/*
-Atualiza o status de um chamado existente
-@param {number} id
-@param {string} novoStatus - "Aberto" | "Em andamento" | "Resolvido"
-@returns {boolean} true se encontrou e atualizou, false se caso ao contrario
-*/
-
-function atualizarStatus (id, novoStatus){
-    const chamados = ListarChamados();
-    const chamado = chamados.find((c) =>c.id===id);
-    if(!chamado){
-        console.warn('chamado com id ${id} não encontrado');
+// Atualiza o status de um chamado.
+function atualizarStatus(id, novoStatus) {
+    if (!STATUS_DISPONIVEIS.includes(novoStatus)) {
         return false;
     }
 
+    const chamados = listarChamados();
+
+    const chamado = chamados.find(
+        chamado => chamado.id === id
+    );
+
+    if (!chamado) {
+        console.warn(`Chamado com ID ${id} não encontrado.`);
+        return false;
+    }
 
     chamado.status = novoStatus;
-    salvarListaCompleta(chamados);
-    return true;     
 
+    salvarListaCompleta(chamados);
+
+    return true;
 }
 
-/*
-Filtrar os chamados por status.
-@param {string} status- "Aberto" | "Em andamento" | "Resolvendo" | "Todos" {Arrays}
-*/
+// Filtra os chamados por status.
+function filtrarPorStatus(status) {
+    const chamados = listarChamados();
 
-function filtrarPorstatus(string){
-    const chamados= ListarChamados();
-
-    if(!status|| status === "Todos"){
+    if (!status || status === "Todos") {
         return chamados;
     }
 
-    return chamados.filtrar((c)=>c.status === status);
+    return chamados.filter(
+        chamado => chamado.status === status
+    );
+}
 
-    /*
-    remove um chamado pelo id (função extra, util para testar)
-    @param (number) id
-    @return (bolean)
-    */
+// Remove um chamado pelo ID.
+function removerChamado(id) {
+    const chamados = listarChamados();
 
-    function removerChamado(id){
-        const chamados = ListarChamados();
-        const listaatualizada = chamados.filter((c)=>c.id !==id);
+    const listaAtualizada = chamados.filter(
+        chamado => chamado.id !== id
+    );
 
-        if (listaatualizada.leght === chamados.leght){
-            console.warn ('Chamado com id $(id) não encontrado');
-            return false;
-        }
+    if (listaAtualizada.length === chamados.length) {
+        return false;
     }
-    salvarListaCompleta(listaatualizada);
+
+    salvarListaCompleta(listaAtualizada);
+
     return true;
+}
 
-
-    /*
-    Limpa todos os chamados (funções, útil para bresetar os testes de cima)
-    */
-
-    function limparTodosChamados(){
-        localStorage.removeItem(CHAVE_STORAGE);
-    }
+// Apaga todos os chamados.
+function limparTodosChamados() {
+    localStorage.removeItem(CHAVE_STORAGE);
 }

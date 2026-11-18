@@ -1,57 +1,48 @@
-/**
- * app.js
- * Camada de interface- Tela de cadastro (index.html)
- * 
- * Responsa´vel por capturar os dados do formulario e repassar para camada de persistencia (storage.js)
- */
+const formChamado = document.getElementById("form-chamado");
+const mensagemStatus = document.getElementById("mensagem-status");
 
-const formChamado = document.getElementById ("form-chamado");
-const mensagemStatus = document.getElementById ("mensagem-status");
+formChamado.addEventListener("submit", function(evento) {
+    evento.preventDefault();
 
-formChamado.addEventListener("submit", function(evento){evento.preventDefault(); //Impedi o navegador de recarregar a página
-    const dadosChamados={
-        nome:document.getElementById("nome").value.trim (),
-        setor:document.getElementById("setor").value.trim (),
-        categoria:document.getElementById("categoria").value.trim (),
-        prioridade:document.getElementById("prioridade").value.trim (),
-        descricao:document.getElementById("descricao").value.trim (),
+    const dadosChamado = {
+        setor: document.getElementById("setor").value.trim(),
+        prioridade: document.getElementById("prioridade").value,
+        descricao: document.getElementById("descricao").value.trim()
     };
 
-    if (!validarDadosChamados(dadosChamados)){
-        exibirMensagem("Preencha todos os campos antes de enviar", "Erro");
-        return ;
+    if (!validarDadosChamado(dadosChamado)) {
+        exibirMensagem("Preencha todos os campos.", "erro");
+        return;
     }
-    const chamadoCriado = salvarChamado(dadosChamados);
 
-    exibirMensagem(
-        `Chamado #${chamadoCriado.id} registrado com sucesso`, "sucesso"
-    );
+    try {
+        const chamadoCriado = salvarChamado(dadosChamado);
 
-    formChamado.request();
+        exibirMensagem(
+            `Chamado #${chamadoCriado.id} registrado com sucesso!`,
+            "sucesso"
+        );
+
+        formChamado.reset();
+
+    } catch (erro) {
+        console.error(erro);
+        exibirMensagem(
+            "Não foi possível salvar o chamado.",
+            "erro"
+        );
+    }
 });
 
-/**
- * Verifica-se todos os campos obrigatorios foram preenchidos
- * @param {object} dados
- * @returns {boolean}
- */
-
-function validarDadosChamados(dados){
-    return(
-        dados.nome !== "" && 
-        dados.setor !== "" && 
-        dados.categoria !== "" && 
-        dados.prioridade !== "" && 
-        dados.descricao !== "" 
+function validarDadosChamado(dados) {
+    return (
+        dados.setor !== "" &&
+        dados.prioridade !== "" &&
+        dados.descricao !== ""
     );
 }
 
-    /**
-     * Exibi uma mensagem de status para o usuario(Sucesso ou Erro)
-     * @param {string} texto
-     * @param {"sucesso"| "erro"} tipo
-     */
-
-        function exibirMensagem(texto, tipo){
-            mensagemStatus.textContent = "Mensagem-status" + tipo;
-        }
+function exibirMensagem(texto, tipo) {
+    mensagemStatus.textContent = texto;
+    mensagemStatus.className = `mensagem-status ${tipo}`;
+}
